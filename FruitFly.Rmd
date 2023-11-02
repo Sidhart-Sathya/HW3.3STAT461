@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 )
 
 # Add additional packages by name to the following list
-packages <- c("tidyverse", "knitr", "midfielddata", "midfieldr") 
+packages <- c("tidyverse", "knitr") 
 lapply(
   X = packages,
   FUN = library,
@@ -95,9 +95,12 @@ control = "Null",
 conf.level = .99
 )
 
-TukeyHSD(flyModel, conf.level = .99, ordered = which())
+TukeyHSD(flyModel, conf.level = .99)
 ```
+
+
 ```{r}
+#Hesse Diagram
 modelLabels <- c("1 Fly Mating 1", "5 Factor 4", "125 (days per fly) 120")
 modelMatrix <- matrix(
   data = c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE),
