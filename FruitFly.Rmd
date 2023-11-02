@@ -97,9 +97,19 @@ conf.level = .99
 
 TukeyHSD(flyModel, conf.level = .99, ordered = which())
 ```
-
-
-
+```{r}
+modelLabels <- c("1 Fly Mating 1", "5 Factor 4", "125 (days per fly) 120")
+modelMatrix <- matrix(
+  data = c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE),
+  nrow = 3,
+  ncol = 3,
+  byrow = FALSE
+)
+hasseDiagram::hasse(
+ data = modelMatrix,
+ labels = modelLabels
+)
+```
 
 
 
