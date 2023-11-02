@@ -1,0 +1,111 @@
+---
+title: "Homework 3.3"
+author: "Domenic Hoffman"
+date: "2023-11-01"
+output: pdf_document
+geometry: left=0.5in,right=0.5in,top=0.5in,bottom=0.5in
+urlcolor: blue
+header-includes:
+  - \usepackage{subfig}
+---
+
+```{r setupFiles, include = FALSE}
+# This template file is based off of a template created by Alex Hayes
+# https://github.com/alexpghayes/rmarkdown_homework_template
+
+# Setting Document Options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+
+# Add additional packages by name to the following list
+packages <- c("tidyverse", "knitr", "midfielddata", "midfieldr") 
+lapply(
+  X = packages,
+  FUN = library,
+  character.only = TRUE
+)
+
+# Loading Helper Files and Setting Global Options
+source("https://raw.github.com/neilhatfield/STAT461/master/rScripts/ANOVATools.R")
+options("contrasts" = c("contr.sum", "contr.poly"))
+
+```
+
+
+```{r}
+# Read In CSV file
+fruitFly <- read.csv("fruitflies.csv")
+# Convert Condition to Factor
+fruitFly$condition <- as.factor(fruitFly$condition)
+#AOV for FF data
+flyModel <- aov(
+  formula = longevity ~ condition,
+  data = fruitFly,
+  na.action = "na.omit"
+  )
+
+# Modern Table
+parameters::model_parameters(
+model = flyModel,
+effectsize_type = c("eta", "omega", "epsilon") # Effect sizes
+) %>%
+knitr::kable(
+digits = 4,
+col.names = c(
+"Source", "SS", "df", "MS", "F", "p-value",
+"Eta Sq.", "Omega Sq.", "Epsilon Sq."),
+caption = "Modern ANOVA Table for Fruit Fly Data",
+booktabs = TRUE,
+align = c("l", rep("c", 8))
+) %>%
+kableExtra::kable_styling(
+font_size = 10,
+latex_options = c("HOLD_position"))
+
+```
+
+```{r}
+pointEst <- dummy.coef(flyModel)
+# pointEst # Look at the output of pointEst so you know in what order the estimates appear
+pointEst <- unlist(pointEst)
+names(pointEst) <- c("Grand Mean", "Null","One Preg","One Virgin","Eight Preg", "Eight Virgin")
+data.frame("Estimate" = pointEst) %>%
+knitr::kable(
+digits = 4,
+caption = "Point Estimates from the Fruit Fly Study",
+booktabs = TRUE,
+align = "c"
+) %>%
+kableExtra::kable_styling(
+font_size = 15,
+latex_options = c("HOLD_position")
+)
+```
+
+```{r}
+# Multi Conf Ints
+DescTools::DunnettTest(
+formula = longevity ~ condition ,
+data = fruitFly,
+control = "Null",
+conf.level = .99
+)
+
+TukeyHSD(flyModel, conf.level = .99, ordered = which())
+```
+
+
+
+
+
+
+\newpage
+# Code Appendix
+
+```{r codeAppendix, ref.label = knitr::all_labels(), echo = TRUE, eval = FALSE}
+
+```
