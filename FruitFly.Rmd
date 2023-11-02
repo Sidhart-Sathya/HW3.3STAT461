@@ -48,7 +48,7 @@ flyModel <- aov(
   na.action = "na.omit"
   )
 
-# Modern Table
+# Modern Table for FF Data
 parameters::model_parameters(
 model = flyModel,
 effectsize_type = c("eta", "omega", "epsilon") # Effect sizes
@@ -65,7 +65,6 @@ align = c("l", rep("c", 8))
 kableExtra::kable_styling(
 font_size = 10,
 latex_options = c("HOLD_position"))
-
 ```
 
 ```{r}
@@ -112,7 +111,7 @@ hasseDiagram::hasse(
  data = modelMatrix,
  labels = modelLabels
 )
-```
+```{r}
 # One Way Assumptions
 # Homoscedasticity 
 ggplot(data = fruitFly, aes(x = condition, y = flyModel$residuals)) + geom_point()
@@ -139,28 +138,6 @@ color = "red"
 xlab("Measurement order") +
 ylab("Residuals")
 ```
-```{r}
-# Fruit Fly Data
-parameters::model_parameters(
-model = flyModel,
-effectsize_type = c("eta", "omega", "epsilon") # Effect sizes
-) %>%
-knitr::kable(
-digits = 4,
-col.names = c(
-"Source", "SS", "df", "MS", "F", "p-value",
-"Eta Sq.", "Omega Sq.", "Epsilon Sq."),
-caption = "Modern ANOVA Table for Fruit Fly Study",
-booktabs = TRUE,
-align = c("l", rep("c", 8))
-) %>%
-kableExtra::kable_styling(
-font_size = 10,
-latex_options = c("HOLD_position")
-)
-```
-
-
 
 
 
