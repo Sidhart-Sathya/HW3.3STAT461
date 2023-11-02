@@ -113,7 +113,34 @@ hasseDiagram::hasse(
  labels = modelLabels
 )
 ```
+# One Way Assumptions
+# Homoscedasticity 
+ggplot(data = fruitFly, aes(x = condition, y = flyModel$residuals)) + geom_point()
 
+# QQ Plot
+car::qqPlot
+
+# Pattern
+ggplot(
+data = data.frame(
+residuals = flyModel$residuals,
+index = 1:length(flyModel$residuals)
+),
+mapping = aes(x = index, y = residuals)
+) +
+geom_point(size = 1.5) +
+geom_line() +
+theme_bw() +
+geom_hline(
+yintercept = 0,
+linetype = "dashed",
+color = "red"
+) +
+xlab("Measurement order") +
+ylab("Residuals")
+
+
+```
 
 
 \newpage
