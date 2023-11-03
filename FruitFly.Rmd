@@ -94,9 +94,28 @@ latex_options = c("HOLD_position")
 ```
 
 ```{r}
+# Convert the TukeyHSD results to a data frame
+flyPairs <- emmeans::emmeans(
+object = flyModel, # Your aov/lm object
+specs = pairwise ~ condition, # Creates all pairs of the levels of the factor listed
+adjust = "tukey", # How you want to control the error rate
+level = 0.99 # 1 - Your overall Type I Error Rate
+)
+## Make a professional looking table
+knitr::kable(
+x = flyPairs$contrasts, # Grab the appropriate sub-object
+digits = 3,
+caption = "Pairwise Post Hoc Comparison via Tukey HSD",
+col.names = c("Pair", "Difference", "SE", "DF", "t", "p-value"),
+align = "lccccc",
+booktabs = TRUE
+) %>%
+kableExtra::kable_styling(
+bootstrap_options = c("condensed", "boardered"),
+font_size = 12,
+latex_options = c("HOLD_position")
+)
 
-# Tukey Multi Conf Intervals
-TukeyHSD(flyModel, conf.level = .99)
 ```
 ```{r}
 modelLabels <- c("1 Fly Mating 1", "5 Factor 4", "125 (days per fly) 120")
