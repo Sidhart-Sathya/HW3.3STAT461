@@ -22,7 +22,8 @@ knitr::opts_chunk$set(
 )
 
 # Add additional packages by name to the following list
-packages <- c("tidyverse", "knitr") 
+packages <- c("tidyverse", "knitr",
+"kableExtra", "car", "psych", "parameters","Rgraphviz","hasseDiagram","multcompView")
 lapply(
   X = packages,
   FUN = library,
@@ -34,10 +35,7 @@ source("https://raw.github.com/neilhatfield/STAT461/master/rScripts/ANOVATools.R
 options("contrasts" = c("contr.sum", "contr.poly"))
 
 ```
-```{r}
-ggplot(data = fruitFly, aes(x = longevity)) + geom_histogram() + ggtitle("Fruitfly Longevity") + xlab("Longevity (Days per Fly)") + ylab("Occurences") + labs(caption = "Figure 1: Fruitfly Longevity by Occurence")
 
-```
 
 ```{r}
 # Read In CSV file
@@ -50,7 +48,12 @@ flyModel <- aov(
   data = fruitFly,
   na.action = "na.omit"
   )
+```
+```{r}
+ggplot(data = fruitFly, aes(x = longevity)) + geom_histogram() + ggtitle("Fruitfly Longevity") + xlab("Longevity (Days per Fly)") + ylab("Occurences") + labs(caption = "Figure 1: Fruitfly Longevity by Occurence")
 
+```
+```{r}
 # Modern Table for FF Data
 parameters::model_parameters(
 model = flyModel,
