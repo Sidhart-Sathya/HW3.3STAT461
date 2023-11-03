@@ -1,8 +1,10 @@
 ---
-title: "Homework 3.3"
+title: "FruitFly Study"
 author: "Group"
-date: "2023-11-03"
-output: pdf_document
+date: "2023-11-01"
+output: 
+ pdf_document:
+   keep_tex: true
 geometry: left=0.5in,right=0.5in,top=0.5in,bottom=0.5in
 urlcolor: blue
 header-includes:
@@ -10,8 +12,6 @@ header-includes:
 ---
 
 ```{r setupFiles, include = FALSE}
-# This template file is based off of a template created by Alex Hayes
-# https://github.com/alexpghayes/rmarkdown_homework_template
 
 # Setting Document Options
 knitr::opts_chunk$set(
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 # Add additional packages by name to the following list
 packages <- c("tidyverse", "knitr",
-"kableExtra", "car", "psych", "parameters","Rgraphviz","hasseDiagram","multcompView")
+"kableExtra", "car", "psych", "parameters","Rgraphviz","hasseDiagram","multcompView") 
 lapply(
   X = packages,
   FUN = library,
@@ -49,12 +49,13 @@ flyModel <- aov(
   na.action = "na.omit"
   )
 ```
+
 ```{r}
 ggplot(data = fruitFly, aes(x = longevity)) + geom_histogram() + ggtitle("Fruitfly Longevity") + xlab("Longevity (Days per Fly)") + ylab("Occurences") + labs(caption = "Figure 1: Fruitfly Longevity by Occurence")
 
 ```
 ```{r}
-# Modern Table for FF Data
+# Modern Table
 parameters::model_parameters(
 model = flyModel,
 effectsize_type = c("eta", "omega", "epsilon") # Effect sizes
@@ -71,6 +72,7 @@ align = c("l", rep("c", 8))
 kableExtra::kable_styling(
 font_size = 10,
 latex_options = c("HOLD_position"))
+
 ```
 
 ```{r}
@@ -92,20 +94,11 @@ latex_options = c("HOLD_position")
 ```
 
 ```{r}
-# Multi Conf Ints
-DescTools::DunnettTest(
-formula = longevity ~ condition ,
-data = fruitFly,
-control = "Null",
-conf.level = .99
-)
 
+# Tukey Multi Conf Intervals
 TukeyHSD(flyModel, conf.level = .99)
 ```
-
-
 ```{r}
-#Hesse Diagram
 modelLabels <- c("1 Fly Mating 1", "5 Factor 4", "125 (days per fly) 120")
 modelMatrix <- matrix(
   data = c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE),
@@ -117,13 +110,22 @@ hasseDiagram::hasse(
  data = modelMatrix,
  labels = modelLabels
 )
+```
+
 ```{r}
 # One Way Assumptions
 # Homoscedasticity 
 ggplot(data = fruitFly, aes(x = condition, y = flyModel$residuals)) + geom_point()
 
 # QQ Plot
-car::qqPlot
+car::qqPlot(
+x = flyModel$residuals,
+distribution = "norm",
+envelope = 0.90,
+id = FALSE,
+pch = 20,
+ylab = "Residuals"
+)
 
 # Pattern
 ggplot(
@@ -143,9 +145,10 @@ color = "red"
 ) +
 xlab("Measurement order") +
 ylab("Residuals")
+
+
 ```
 ```{r}
-# MultCompBox w/ letters
 multcompBoxplot(
   formula = longevity ~ condition,
   data = fruitFly,
