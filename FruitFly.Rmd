@@ -1,7 +1,7 @@
 ---
 title: "Homework 3.3"
-author: "Domenic Hoffman"
-date: "2023-11-01"
+author: "Group"
+date: "2023-11-03"
 output: pdf_document
 geometry: left=0.5in,right=0.5in,top=0.5in,bottom=0.5in
 urlcolor: blue
@@ -34,7 +34,10 @@ source("https://raw.github.com/neilhatfield/STAT461/master/rScripts/ANOVATools.R
 options("contrasts" = c("contr.sum", "contr.poly"))
 
 ```
+```{r}
+ggplot(data = fruitFly, aes(x = longevity)) + geom_histogram() + ggtitle("Fruitfly Longevity") + xlab("Longevity (Days per Fly)") + ylab("Occurences") + labs(caption = "Figure 1: Fruitfly Longevity by Occurence")
 
+```
 
 ```{r}
 # Read In CSV file
