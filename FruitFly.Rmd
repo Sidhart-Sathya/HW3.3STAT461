@@ -35,7 +35,11 @@ source("https://raw.github.com/neilhatfield/STAT461/master/rScripts/ANOVATools.R
 options("contrasts" = c("contr.sum", "contr.poly"))
 
 ```
+## Literature Review
 
+Fruit flies (drosophila melanogaster) are one of the most extensively studied organisms in biological research. In 1981, researchers Linda Partridge and Marion Farquhar from the University of Edinburgh decided to conduct a study on the effect of sexual activity of fruit flies on their lifespan. Since the cost of reproduction had already been determined to reduce longevity in females, the researchers sought to demonstrate the same effect for males (Partridge & Farquhar, 1981). 
+
+Due to its small size and short life cycle, it is easy to measure and compare the life spans for D. Melanogaster. Furthermore, D. Melanogaster shares multiple similarities with mammals with respect to aging. In the cellular and molecular levels, D. melanogaster and mammals both demonstrate deterioration of muscle and nerve tissue as well as accumulation of damaged DNA over time (Bhode & Tower, 2002). These similarities allow age and lifespan-related research on D. Melanogaster to be applied to mammalian and possibly human implications. 
 
 ```{r}
 # Read In CSV file
@@ -49,9 +53,32 @@ flyModel <- aov(
   na.action = "na.omit"
   )
 ```
+## Methodology
 
+The data used in this report was from the study originally conducted by Partridge and Farquhar. The method of data collection hence is the same. The following is an excerpt from the original study: 
+
+“The flies used were an outbred stock collected in Dahomey in 1970. Sexual activity was manipulated by supplying individual males with receptive virgin females at a rate of one or eight virgins per day. The longevity of these males was recorded and compared with that of two control types. The first control consisted of two sets of individual males kept with newly inseminated females equal in number to the virgin females supplied to the experimental males. Newly inseminated females will not usually re-mate for at least 2 days 10' 11 thus they served as a control for any effect of competition with the male for food or space. The second control was a set of individual males kept with no females. There were 25 males in each of the experimental and control groups, and the groups were treated identically in respect of number of anaesthetizations (using C02) and provision of fresh food medium” (Partridge & Farquhar, 1981). 
+
+For analysis, we will use parametric shortcuts for testing the grand sample arithmetic mean (GSAM). In post-hoc analysis, we will consider all possible pairwise comparisons. Using Tukey's HSD to resolve the multiple comparison issues with an overall Type I Error risk of 0.01. 
+
+This report will utilize an Unusualness Threshold of 1%, meaning that if we observe an event that occurs no more than 1% of the time under the assumption of the null model, we will reject the null model.
+
+## Data Exploration
 ```{r}
-ggplot(data = fruitFly, aes(x = longevity)) + geom_histogram() + ggtitle("Fruitfly Longevity") + xlab("Longevity (Days per Fly)") + ylab("Occurences") + labs(caption = "Figure 1: Fruitfly Longevity by Occurence")
+modelLabels <- c("1 Fly Mating 1", "5 Factor 4", "125 (days per fly) 120")
+modelMatrix <- matrix(
+  data = c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE),
+  nrow = 3,
+  ncol = 3,
+  byrow = FALSE
+)
+hasseDiagram::hasse(
+ data = modelMatrix,
+ labels = modelLabels
+)
+```
+```{r}
+ggplot(data = fruitFly, aes(x = longevity)) + geom_histogram() + ggtitle("Fruitfly Longevity") + xlab("Longevity (Days per Fly)") + ylab("Occurences") + labs(caption = "Figure 2: Fruitfly Longevity by Occurence")
 
 ```
 ```{r}
@@ -65,7 +92,7 @@ digits = 4,
 col.names = c(
 "Source", "SS", "df", "MS", "F", "p-value",
 "Eta Sq.", "Omega Sq.", "Epsilon Sq."),
-caption = "Modern ANOVA Table for Fruit Fly Data",
+caption = "Figure 3: Modern ANOVA Table for Fruit Fly Data",
 booktabs = TRUE,
 align = c("l", rep("c", 8))
 ) %>%
@@ -83,7 +110,7 @@ names(pointEst) <- c("Grand Mean", "Null","One Preg","One Virgin","Eight Preg", 
 data.frame("Estimate" = pointEst) %>%
 knitr::kable(
 digits = 4,
-caption = "Point Estimates from the Fruit Fly Study",
+caption = "Figure 4: Point Estimates from the Fruit Fly Study",
 booktabs = TRUE,
 align = "c"
 ) %>%
@@ -105,7 +132,7 @@ level = 0.99 # 1 - Your overall Type I Error Rate
 knitr::kable(
 x = flyPairs$contrasts, # Grab the appropriate sub-object
 digits = 3,
-caption = "Pairwise Post Hoc Comparison via Tukey HSD",
+caption = "Figure 5: Pairwise Post Hoc Comparison via Tukey HSD",
 col.names = c("Pair", "Difference", "SE", "DF", "t", "p-value"),
 align = "lccccc",
 booktabs = TRUE
@@ -117,25 +144,14 @@ latex_options = c("HOLD_position")
 )
 
 ```
-```{r}
-modelLabels <- c("1 Fly Mating 1", "5 Factor 4", "125 (days per fly) 120")
-modelMatrix <- matrix(
-  data = c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE),
-  nrow = 3,
-  ncol = 3,
-  byrow = FALSE
-)
-hasseDiagram::hasse(
- data = modelMatrix,
- labels = modelLabels
-)
-```
+
 
 ```{r}
 # One Way Assumptions
 # Homoscedasticity 
-ggplot(data = fruitFly, aes(x = condition, y = flyModel$residuals)) + geom_point()
-
+ggplot(data = fruitFly, aes(x = condition, y = flyModel$residuals)) + ylab("Residuals") +geom_point() +ggtitle("Figure 6: Residuals by Condition")
+```
+```{r}
 # QQ Plot
 car::qqPlot(
 x = flyModel$residuals,
@@ -143,9 +159,11 @@ distribution = "norm",
 envelope = 0.90,
 id = FALSE,
 pch = 20,
-ylab = "Residuals"
+ylab = "Residuals",
+main = 'Figure 7: QQ Plot'
 )
-
+```
+```{r}
 # Pattern
 ggplot(
 data = data.frame(
@@ -162,9 +180,8 @@ yintercept = 0,
 linetype = "dashed",
 color = "red"
 ) +
-xlab("Measurement order") +
-ylab("Residuals")
-
+xlab("Measurement Order") +
+ylab("Residuals")+ggtitle("Figure 8: Residuals by Measurement Order")
 
 ```
 ```{r}
@@ -181,6 +198,8 @@ multcompBoxplot(
     )
   )
 )
+
+
 # Still can't figure out how to add all the labels
 # Note order of variables on y-axis
 #EightVirgin
