@@ -1,6 +1,6 @@
 ---
-title: "FruitFly Study"
-author: "Group"
+title: "Study on Fruit Flies"
+author: "Eric Chen, Valeria Martinez, Domenic Hoffman, Sidhart Sathya, Mark Combs"
 date: "2023-11-01"
 output: 
  pdf_document:
@@ -36,8 +36,9 @@ options("contrasts" = c("contr.sum", "contr.poly"))
 
 ```
 
-##Introduction 
-The birds and the bees...well the flies to be exact. Fruit flies are that pesky little animal that most people want out of their home. But for researchers they serve as a crucial part in research. Fruit flies (drosophila melanogaster) are one of the most extensively studied organisms in biological research. They are most commonly used in biomedial research and allow us to better understand the human condition. The study being analyzed today is no different.
+## Introduction 
+
+The birds and the bees...well the flies to be exact. Fruit flies are that pesky little animal that most people want out of their home. For researchers, they serve as a crucial part in research. Fruit flies (drosophila melanogaster) are one of the most extensively studied organisms in biological research. They are most commonly used in biomedial research and allow us to better understand the human condition. 
 
 
 ## Literature Review
@@ -88,14 +89,15 @@ The above Hasse diagram illustrates a breakdown of what the data looks like as w
 ggplot(data = fruitFly, aes(x = longevity)) + geom_histogram() + ggtitle("Fruitfly Longevity") + xlab("Longevity (Days per Fly)") + ylab("Occurences") + labs(caption = "Figure 2: Fruitfly Longevity by Occurence")
 
 ```
-Now that we understand what we are looking at and what we hope to measure, we want to use ANOVA. In order to use ANOVA though certain assumptions must be met.
+Now that we understand what we are looking at and what we hope to measure, we want to use a one-way ANOVA test. 
 
-## One Way Assumptions
-# Homoscedasticity 
+# One Way Assumptions
+In this section, we will demonstrate the assumptions required for a one-way ANOVA test.
+## Homoscedasticity 
 ```{r}
 ggplot(data = fruitFly, aes(x = condition, y = flyModel$residuals)) + ylab("Residuals") +geom_point() +ggtitle("Figure 6: Residuals by Condition")
 ```
-As we check for Homoscedasticity, we see there is an even distribution and no funneling. Thus, we proceed.
+As we check for homoscedasticity, we see there is an even distribution and no funneling. Therefore, we can assume homoscedasticity is satisified. 
 
 # QQ Plot
 ```{r}
@@ -109,9 +111,9 @@ ylab = "Residuals",
 main = 'Figure 7: QQ Plot'
 )
 ```
-Since all observations are within the 90% envelope, we can proceed. 
+It appears that seven of the 125 observations were outside the 90% envelope. Since this is around 5.6% of total observations, we will act as if the Gaussian assumption is satisfied. 
 
-##Independence of Observations
+## Independence of Observations
 ```{r}
 ggplot(
 data = data.frame(
@@ -132,7 +134,7 @@ xlab("Measurement Order") +
 ylab("Residuals")+ggtitle("Figure 8: Residuals by Measurement Order")
 
 ```
-As no pattern is seen, we can assume independence of observations. Now that all assumptions have been met, we can perform ANOVA.
+As no pattern is seen, we can assume independence of observations. Since all the assumptions have been met, we will proceed with a one-way ANOVA test.
 
 ```{r}
 # Modern Table
@@ -155,7 +157,7 @@ latex_options = c("HOLD_position"))
 
 ```
 
-##Post-Hoc – Pairwise Comparison 
+## Post-Hoc – Pairwise Comparison 
 ```{r}
 pointEst <- dummy.coef(flyModel)
 # pointEst # Look at the output of pointEst so you know in what order the estimates appear
@@ -198,7 +200,7 @@ latex_options = c("HOLD_position")
 )
 
 ```
-From this we can see all the comparisons of pairs to evaluate how they compare to the GSAM. Right away, we can tell that the biggest differences lie between the comparison of eight virgin fruit flies vs. one virgin fruit fly. 
+We can see all the comparisons of pairs to evaluate how they compare to the GSAM. Right away, we can tell that the greatest differences lie between the comparison of eight virgin fruit flies vs. one virgin fruit fly. 
 
 
 ```{r}
@@ -216,9 +218,30 @@ multcompBoxplot(
   )
 )
 ```
+\newpage
+## Results
+
+Our research question was based on the abstract from the Partridge and Farquhar study, “How does sexual activity affect the longevity of the male fruit fly?”
+
+The null hypothesis is:
+There is no cost of sexual activity of the male fruit fly that affects their longevity.
+
+The alternative hypothesis is:
+There is a cost associated with sexual activity if the male fruit fly that affects their longevity.
+
 
 ## Discussion
-While the original study did not go into as much depth as our analysis, we can contuniue under the assumtpion that the pairwise combinations that were statistically significant were: Eight Pregnant vs. One Virgin, Eight Pregnant vs. One Pregnant, One Virgin vs. One Pregnant, Eight Pregnant vs. Null, One Virgin vs. Null, and One Pregnant vs. Null. 
+From the one-way ANOVA test, we will reject our null hypothesis in favor of the alternative, as the p-value acquired (0) is less than our unusualness threshold of 0.01.
+
+While the original study did not go into as much depth as our analysis, we can continue under the assumption that the pairwise combinations that were statistically significant were: Eight pregnant vs. Eight virgin, Eight virgin vs. Null, Eight virgin vs. one pregnant, and Eight virgin vs. one virgin. For these pairs, we will reject our null hypothesis that there is no cost of sexual activity of the male fruit fly that affects their longevity. These pairs demonstrated a p-value lower than our unusualness threshold of 0.01.
+
+However, for the eight pregnant vs. Null, eight pregnant vs. one pregnant, eight pregnant vs. one virgin, null vs. one pregnant, null vs. one virgin, and one pregnant vs. one virgin pairs, we would fail to reject our null hypothesis. These pairs demonstrated a p-value higher than our unusualness threshold of 0.01.
+
+\newpage
+# References
+Bhole, D., & Tower, J. (2002). Fruit Flies, Drosophila. In D. J. Ekerdt (Ed.), Encyclopedia of Aging (Vol. 2, pp. 514-517). Macmillan Reference USA. https://link-gale-com.ezaccess.libraries.psu.edu/apps/doc/CX3402200152/GVRL?u=psucic&sid=bookmark-GVRL&xid=849d078d 
+
+Partridge, L., Farquhar, M. Sexual activity reduces lifespan of male fruit flies. Nature 294, 580–582 (1981). https://doi.org/10.1038/294580a0
 
 \newpage
 # Code Appendix
