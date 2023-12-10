@@ -1,0 +1,142 @@
+---
+title: "461 Final"
+author: "Group"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setupFiles, include = FALSE}
+# This template file is based off of a template created by Alex Hayes
+# https://github.com/alexpghayes/rmarkdown_homework_template
+
+# Setting Document Options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+
+# Add additional packages by name to the following list
+packages <- c("tidyverse", "knitr", "rstatix","kableExtra") 
+lapply(
+  X = packages,
+  FUN = library,
+  character.only = TRUE
+)
+
+```
+```{r dataIN}
+# Australia Only Cricket Data ---
+cricketData <- read.csv('cricketData.csv')
+
+# Change names for fucntionality
+names(cricketData) <- c('Year', 'Location', 'Outcome', 'Type')
+
+cricketData <- cricketData %>%
+  mutate(Outcome = ifelse((Outcome=='Win'), "Win", "Non-win"))
+
+# Mutate Home/Away Ratio
+cricketData <- cricketData %>%
+  group_by(Year) %>%
+  mutate(homeRatio = (sum(Location == 'Home')/((sum(Location == 'Away')) + sum(Location == 'Home'))))
+
+# Mutate Win percent ---
+cricketData <- cricketData %>%
+  group_by(Year, Type) %>%
+  mutate(winPercent = (sum(Outcome == 'Win')/((sum(Outcome == 'Win')) + sum(Outcome == 'Non-win'))))
+
+
+
+# Convert to Factor ---
+cricketData$Location <- as.factor(cricketData$Location)
+cricketData$Outcome <- as.factor(cricketData$Outcome)
+cricketData$Type <- as.factor(cricketData$Type)
+
+
+# Attempt Transformation ---
+cricketData$winTransformed <- (cricketData$winPercent)^2
+
+cricketData <- cricketData %>%
+  select(Year, Type, homeRatio, winPercent, winTransformed) %>%
+  distinct()
+```
+
+```{r aovFit}
+# Define AOV for cricketModel
+cricketModel <- aov(
+formula = winTransformed ~ Year + Type + homeRatio,
+data = cricketData,
+na.action = "na.omit"
+)
+
+```
+
+```{r gausCheck}
+# QQ Plot for cricket Model Residuals ---
+car::qqPlot(
+x = residuals(cricketModel),
+distribution = "norm",
+envelope = 0.90,
+id = FALSE,
+pch = 20,
+ylab = "Residuals (Win %)"
+)
+
+```
+
+
+```{r homoSced}
+# Assess Homoscedasticity Assumption ---
+ggplot(
+data = data.frame(
+residuals = cricketModel$residuals,
+fitted = cricketModel$fitted.values
+),
+mapping = aes(x = fitted, y = residuals)
+) +
+geom_point(size = 2) +
+theme_bw() +
+xlab("Fitted values (Win %)") +
+ylab("Residuals (Win %)")
+
+
+```
+```{r indepObs}
+## Assess Independence of Observations ---
+ 
+ggplot(
+data = data.frame(
+residuals = cricketModel$residuals,
+index = 1:length(cricketModel$residuals)
+),
+mapping = aes(x = index, y = residuals)
+) +
+geom_point(size = 1.5) +
+geom_line() +
+theme_bw() +
+geom_hline(
+yintercept = 0,
+linetype = "dashed",
+color = "red"
+) +
+xlab("Measurement order") +
+ylab("Residuals")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+```{r codeAppendix, ref.label = knitr::all_labels(), echo = TRUE, eval = FALSE}
+
+```
