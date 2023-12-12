@@ -25,6 +25,14 @@ lapply(
   character.only = TRUE
 )
 
+# Loading Helper Files and Setting Global Options ----
+options(knitr.kable.NA = "")
+options("contrasts" = c("contr.sum", "contr.poly"))
+source("https://raw.github.com/neilhatfield/STAT461/master/rScripts/ANOVATools.R")
+
+source("https://raw.github.com/neilhatfield/STAT461/master/rScripts/shadowgram.R")
+
+
 ```
 ```{r dataIN}
 # Australia Only Cricket Data ---
@@ -58,22 +66,118 @@ cricketData$Type <- as.factor(cricketData$Type)
 cricketData$winTransformed <- (cricketData$winPercent)^2
 
 cricketData <- cricketData %>%
-  select(Year, Type, homeRatio, winPercent, winTransformed) %>%
+  dplyr::select(Year, Type, homeRatio, winPercent, winTransformed) %>%
   distinct()
 ```
+```{r sampleStats}
+# Descriptive statistics on win % by Type ----
+winStats <- psych::describeBy(
+  x = cricketData$winPercent,
+  group = cricketData$Type,
+  na.rm = TRUE,
+  skew = TRUE,
+  ranges = TRUE,
+  quant = c(0.25, 0.75),
+  IQR = FALSE,
+  mat = TRUE,
+  digits = 4
+)
 
+winStats %>%
+  tibble::remove_rownames() %>%
+  tibble::column_to_rownames(
+    var = "group1"
+  ) %>%
+  dplyr::select(
+    n, min, Q0.25, median, Q0.75, max, mad, mean, sd, skew, kurtosis
+  ) %>%
+  knitr::kable(
+    caption = "Summary Statistics for Win % by Type of Match",
+    digits = 3,
+    format.args = list(big.mark = ","),
+    align = rep('c', 11),
+    col.names = c("n", "Min", "Q1", "Median", "Q3", "Max", "MAD", "SAM", "SASD",
+                  "Sample Skew", "Sample Ex. Kurtosis"),
+    booktabs = TRUE
+  )  %>%
+  kableExtra::kable_styling(
+    font_size = 12,
+    latex_options = c("scale_down", "HOLD_position")
+  )
+
+```
+```{r homewinScatter}
+#| fig.cap = "Plot of Home Game Percent vs Adjusted Win Percentage"
+cricketData %>%
+  ggplot(aes(x = homeRatio, y = winTransformed, color = Type)) + geom_point() + xlab("Win Percentage Sqaured") +ylab("Percent of Games Played at Home") + ggtitle('Home Games vs Wins')
+```
+```{r}
+#| fig.cap = "Shadowgram of Adjusted Win Percentage",
+#| fig.pos = "H",
+#| fig.height = 2.75
+
+# Create a shadowgram of the distances ----
+shadowgram(
+  dataVec = cricketData$winTransformed * 100,
+  label = "Distance (cm)",
+  layers = 70,
+  aStep = 7,
+  color = "blue"
+)
+```
 ```{r aovFit}
 # Define AOV for cricketModel
 cricketModel <- aov(
-formula = winTransformed ~ Year + Type + homeRatio,
+formula = winTransformed ~ Year + Type*homeRatio,
 data = cricketData,
 na.action = "na.omit"
 )
 
 ```
+```{r interactionPlot}
+#| fig.cap = "Interaction Plot for Homefield Advantage Study",
+#| fig.pos = "H",
+#| fig.height = 2.75
 
-```{r gausCheck}
+# Create an interaction plot ----
+ggplot(
+  data = cricketData,
+  mapping = aes(
+    x = Year,
+    y = winTransformed,
+    shape = Type,
+    color = Type,
+    linetype = Type,
+    group = Type
+  )
+) +
+  stat_summary(fun = "mean", geom = "point", size = 3) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1) +
+  geom_jitter(width = 0.1, height = 0.1, alpha = 0.5, size = 1) +
+  ggplot2::theme_bw() +
+  xlab("Adjusted Win Percent") +
+  ylab("Year") +
+  labs(
+    color = "Type",
+    shape = "Type",
+    linetype = "Type"
+  ) +
+  
+  theme(
+    legend.position = "bottom",
+    text = element_text(size = 12)
+  )
+
+```
+```{r assumCheck}
+#| fig.cap = "Assessing Assumptions for Cricket Data",
+#| fig.subcap = c("QQ Plot", "Tukey-Anscombe Plot", "Independence of Observation Scatter Plot"),
+#| fig.ncol = 3,
+#| out.width = "50%",
+#| fig.pos = "H",
+#| fig.show = "hold"
 # QQ Plot for cricket Model Residuals ---
+      # not that 3/33 fall outside the envelope
 car::qqPlot(
 x = residuals(cricketModel),
 distribution = "norm",
@@ -83,26 +187,31 @@ pch = 20,
 ylab = "Residuals (Win %)"
 )
 
-```
-
-
-```{r homoSced}
-# Assess Homoscedasticity Assumption ---
+# Generate the Tukey-Anscombe plot ----
 ggplot(
-data = data.frame(
-residuals = cricketModel$residuals,
-fitted = cricketModel$fitted.values
-),
-mapping = aes(x = fitted, y = residuals)
+  data = data.frame(
+    residuals = residuals(cricketModel),
+    fitted = fitted.values(cricketModel)
+  ),
+  mapping = aes(x = fitted, y = residuals)
 ) +
-geom_point(size = 2) +
-theme_bw() +
-xlab("Fitted values (Win %)") +
-ylab("Residuals (Win %)")
+  geom_point(size = 2) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed",
+    color = "grey50"
+  ) +
+  geom_smooth(
+    formula = y ~ x,
+    method = stats::loess,
+    method.args = list(degree = 1),
+    se = FALSE,
+    linewidth = 0.5
+  ) +
+  theme_bw() +
+  xlab("Fitted values (Adj. Win %)") +
+  ylab("Residuals (Adj. Win %)")
 
-
-```
-```{r indepObs}
 ## Assess Independence of Observations ---
  
 ggplot(
@@ -125,16 +234,27 @@ ylab("Residuals")
 
 
 ```
-
-
-
-
-
-
-
-
-
-
+```{r anovaOut}
+#| fig.cap = "ANOVA Output for Cricket Model"
+# Modern ANOVA Table ----
+parameters::model_parameters(
+  model = cricketModel,
+  effectsize_type = c("eta", "omega", "epsilon")
+) %>%
+  knitr::kable(
+  digits = 4,
+  col.names = c(
+    "Source", "SS", "df", "MS", "F", "p-value",
+    "Eta Sq.", "Omega Sq.", "Epsilon Sq."), 
+  caption = "ANOVA Table for Homefield Advantage Study",
+  booktabs = TRUE,
+  align = c("l", rep("c", 8))
+  ) %>%
+  kableExtra::kable_styling(
+    font_size = 10,
+    latex_options = c("HOLD_position")
+  )
+```
 
 
 ```{r codeAppendix, ref.label = knitr::all_labels(), echo = TRUE, eval = FALSE}
