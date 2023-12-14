@@ -68,8 +68,11 @@ cricketData$winTransformed <- (cricketData$winPercent)^2
 cricketData <- cricketData %>%
   dplyr::select(Year, Type, homeRatio, winPercent, winTransformed) %>%
   distinct()
+
+
 ```
 ```{r sampleStats}
+#| tab.cap = "Descriptive Statistics"
 # Descriptive statistics on win % by Type ----
 winStats <- psych::describeBy(
   x = cricketData$winPercent,
@@ -126,7 +129,13 @@ shadowgram(
 )
 ```
 ```{r aovFit}
-# Define AOV for cricketModel
+# Define AOV for cricketModel ---
+cricketModel <- aov(
+formula = winTransformed ~ Year + Type + homeRatio,
+data = cricketData,
+na.action = "na.omit"
+)
+# Model for homogeneity ---
 cricketModel <- aov(
 formula = winTransformed ~ Year + Type*homeRatio,
 data = cricketData,
@@ -134,59 +143,100 @@ na.action = "na.omit"
 )
 
 ```
-```{r interactionPlot}
-#| fig.cap = "Interaction Plot for Homefield Advantage Study",
+```{r linCov}
+#| fig.cap = "Linearity Covariate Test",
 #| fig.pos = "H",
 #| fig.height = 2.75
 
-# Create an interaction plot ----
 ggplot(
-  data = cricketData,
-  mapping = aes(
-    x = Year,
-    y = winTransformed,
-    shape = Type,
-    color = Type,
-    linetype = Type,
-    group = Type
-  )
+data = cricketData,
+mapping = aes(
+y = winTransformed,
+x = homeRatio
+)
 ) +
-  stat_summary(fun = "mean", geom = "point", size = 3) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1) +
-  geom_jitter(width = 0.1, height = 0.1, alpha = 0.5, size = 1) +
-  ggplot2::theme_bw() +
-  xlab("Adjusted Win Percent") +
-  ylab("Year") +
-  labs(
-    color = "Type",
-    shape = "Type",
-    linetype = "Type"
-  ) +
-  
-  theme(
-    legend.position = "bottom",
-    text = element_text(size = 12)
-  )
-
+geom_point(size = 2) +
+geom_smooth( # Adds a smoother function's graph
+inherit.aes = FALSE,
+mapping = aes(x = homeRatio, y = winTransformed),
+method = "lm", # Fit a Linear Model
+formula = y ~ x, # Specifies the form of the "linear" model
+color = "black",
+linetype = "dashed",
+se = FALSE
+) +
+theme_bw() +
+xlab("Percent of Home Games") +
+ylab("Win Percent (Adjusted)")
 ```
-```{r assumCheck}
-#| fig.cap = "Assessing Assumptions for Cricket Data",
-#| fig.subcap = c("QQ Plot", "Tukey-Anscombe Plot", "Independence of Observation Scatter Plot"),
-#| fig.ncol = 3,
-#| out.width = "50%",
-#| fig.pos = "H",
-#| fig.show = "hold"
-# QQ Plot for cricket Model Residuals ---
-      # not that 3/33 fall outside the envelope
+
+```{r assumCheck1}
+#| fig.sub = "QQ Plot"
+## Step 1: send the data through the Mahalanobis function
+outlierDetection <- rstatix::mahalanobis_distance(cricketData)
+## Step 2: OPTIONAL--reattach the factor
+outlierDetection <- cbind(
+outlierDetection,
+factor = cricketData$Type
+)
+## Step 3: Make a scatter plot
+ggplot(
+data = outlierDetection,
+mapping = aes(
+y = winTransformed,
+x = homeRatio,
+shape = is.outlier,
+color = factor
+)
+) +
+geom_point(size = 3) +
+theme_bw() +
+xlab("Percent of Home Games") +
+ylab("Win Percent (Adjusted)") +
+labs(
+color = "Type of Match",
+shape = "Potential Outlier"
+)
+```
+```{r assumCheck2}
+#| fig.cap = "Homogeneity of Slopes"
+# Demo Code for Assessing Homogeneity of Slopes in Keyboarding Pain Study ----
+ggplot(
+data = cricketData,
+mapping = aes(
+y = winTransformed,
+x = homeRatio,
+color = Type,
+shape = Type
+)
+) +
+geom_point(size = 2) +
+geom_smooth(
+method = "lm", # See notes below
+mapping = aes(y = predict(cricketModel)),
+formula = y ~ x,
+se = FALSE
+) +
+theme_bw() +
+xlab("Percent of Home Games") +
+ylab("Win Percent (Adjusted)") +
+labs(
+color = "Type of Match",
+shape = "Type of Match"
+)
+```
+```{r gausRes}
+# Demo Code for QQ plot in Keyboarding Pain Study ----
 car::qqPlot(
 x = residuals(cricketModel),
 distribution = "norm",
 envelope = 0.90,
 id = FALSE,
 pch = 20,
-ylab = "Residuals (Win %)"
+ylab = "Residuals (Win % Adj.)"
 )
-
+```
+```{r tukey}
 # Generate the Tukey-Anscombe plot ----
 ggplot(
   data = data.frame(
@@ -211,7 +261,12 @@ ggplot(
   theme_bw() +
   xlab("Fitted values (Adj. Win %)") +
   ylab("Residuals (Adj. Win %)")
+```
 
+```{r assumCheck3}
+#| fig.cap = "Independence of Observation Scatter Plot",
+#| fig.pos = "H",
+#| fig.show = "hold"
 ## Assess Independence of Observations ---
  
 ggplot(
@@ -234,52 +289,110 @@ ylab("Residuals")
 
 
 ```
-```{r anovaOut}
-#| fig.cap = "ANOVA Output for Cricket Model"
-# Modern ANOVA Table ----
+```{r omnibus}
+#| fig.cap = "Omnibus Output for Cricket Model"
+# Omnibus Test/Modern ANCOVA Table ----
 parameters::model_parameters(
-  model = cricketModel,
-  effectsize_type = c("eta", "omega", "epsilon")
+model = cricketModel,
+effectsize_type = c("eta", "omega", "epsilon")
 ) %>%
-  knitr::kable(
-  digits = 4,
-  col.names = c(
-    "Source", "SS", "df", "MS", "F", "p-value",
-    "Eta Sq.", "Omega Sq.", "Epsilon Sq."), 
-  caption = "ANOVA Table for Homefield Advantage Study",
-  booktabs = TRUE,
-  align = c("l", rep("c", 8))
-  ) %>%
-  kableExtra::kable_styling(
-    font_size = 10,
-    latex_options = c("HOLD_position")
-  )
-```
-```{r postHocES1}
-# Demo Code for emmeans Post Hoc ----
-cricketPHPairs <- emmeans::emmeans(
-object = cricketModel, # Your aov/lm object
-specs = pairwise ~ Type, # Creates all pairs of the levels of the factor listed
-adjust = "tukey", # How you want to control the error rate
-level = 0.9 # 1 - Your overall Type I Error Rate
+dplyr::mutate( #Fixing the Parameter (Source) Column's values
+Parameter = dplyr::case_when(
+Parameter == "homeRatio" ~ "Percent of Games at Home",
+Parameter == "Type" ~ "Type of Cricket Match",
+Parameter == "Type:homeRatio" ~ "Type:Home Interaction",
+TRUE ~ Parameter
 )
-## Make a professional looking table
+) %>%
+dplyr::mutate(
+p = ifelse(
+test = is.na(p),
+yes = NA,
+no = pvalRound(p)
+)
+) %>%
 knitr::kable(
-x = cricketPHPairs$contrasts, # Grab the appropriate sub-object
-digits = 3,
-caption = "Pairwise Post Hoc Comparison via Tukey HSD",
-col.names = c("Pair", "Difference", "SE", "DF", "t", "p-value"),
-align = "lccccc",
+digits = 4,
+col.names = c("Source", "SS", "df", "MS", "F", "p-value",
+"Partial Eta Sq.", "Partial Omega Sq.", "Partial Epsilon Sq."),
+caption = "ANOVA Table for Cricket Home Games Study",
+align = c('l',rep('c',8)),
+booktab = TRUE
+) %>%
+kableExtra::kable_styling(
+bootstrap_options = c("striped", "condensed"),
+font_size = 12,
+latex_options = c("scale_down", "HOLD_position")
+)
+```
+```{r pointEst}
+## Type
+emmOutKey <- emmeans::emmeans(
+object = cricketModel,
+specs = pairwise ~ Type,
+adjust = "tukey",
+level = 0.9
+)
+## Point Estimates
+as.data.frame(emmOutKey$emmeans) %>%
+knitr::kable(
+digits = 4,
+col.names = c("Match Type", "Marginal Mean","SE", "DF",
+"Lower Bound","Upper Bound"),
+caption = "Marginal Means-Tukey 90\\% Adjustment",
+align = c("l", rep("c", 5)),
 booktabs = TRUE
 ) %>%
 kableExtra::kable_styling(
-bootstrap_options = c("condensed", "boardered"),
+bootstrap_options = c("striped", "condensed"),
 font_size = 12,
 latex_options = c("HOLD_position")
 )
+```
+```{r contrast}
+as.data.frame(emmOutKey$contrasts) %>%
+knitr::kable(
+digits = 4,
+col.names = c("Comparison", "Difference","SE", "DF",
+"t Statistic","p-value"),
+caption = "Marginal Means-Tukey 90\\% Adjustment",
+align = c("l", rep("c", 5)),
+booktabs = TRUE
+) %>%
+kableExtra::kable_styling(
+bootstrap_options = c("striped", "condensed"),
+font_size = 12,
+latex_options = c("HOLD_position")
+)
+```
+```{r postHoc}
+## Keyboarding Study
+as.data.frame(
+emmeans::eff_size(
+object = emmOutKey,
+sigma = sigma(cricketModel),
+edf = df.residual(cricketModel)
+)
+) %>%
+dplyr::mutate(
+ps = probSup(effect.size),
+.after = effect.size
+) %>%
+dplyr::select(contrast, effect.size, ps) %>%
+knitr::kable(
+digits = 3,
+col.names = c("Keyboard Comparison", "Cohen's d", "Probability of Superiority"),
+align = "lccc",
+caption = "Effect Sizes for Match Type",
+booktab = TRUE
+) %>%
+kableExtra::kable_styling(
+bootstrap_options = c("striped", "condensed"),
+font_size = 12,
+latex_options = "HOLD_position"
+)
 
 ```
-
 
 
 
