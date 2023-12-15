@@ -1,6 +1,6 @@
 ---
-title: "461 Final"
-author: "Group"
+title: "Australian Homefield Advantage in Cricket"
+author: " Eric Chen, Domenic Hoffman, Valeria Martinez, Sidhart Sathya, Mark Combs"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
@@ -11,6 +11,7 @@ output: pdf_document
 
 # Setting Document Options
 knitr::opts_chunk$set(
+  cache = TRUE,
   echo = FALSE,
   warning = FALSE,
   message = FALSE,
@@ -71,8 +72,57 @@ cricketData <- cricketData %>%
 
 
 ```
-```{r sampleStats}
-#| tab.cap = "Descriptive Statistics"
+# Executive Summary
+
+This report will attempt to decide if there is a true 'homefield advantage' in Australian Cricket, or if it is simply a figure of speech that holds no competitive value. We will apply ideas and methods learned throughout the course of our Statistics 461 class taught by Professor Neil Hatfield during the Fall 2023 semester at The Pennsylvania State University. 
+
+# Introduction and Background
+
+One of the most well-known phenomena in sports that has been used for decades to ‘predict’ the result of a match has been home-field advantage. In its simplest form, home-field advantage is described as the benefit the home team has over the visiting team. Researchers have tried for decades to pinpoint whether this phenomenon can be proved statistically, mathematically, and psychologically.  
+
+Most people were introduced to the idea of using statistics in sports with the uber-famous baseball movie Moneyball (2011). In the film, a team manager takes a revolutionary approach to scouting by relying on sabermetrics (a form of game data in baseball). However, the origins of sports analytics can be traced back to the early 20th century. In recent years, the field of sports analytics has exploded. Thousands, if not millions, of websites are filled with data from almost every sport on the planet; it is easier than ever to analyze sports and players alike.  
+
+Cricket is no exception to the boom of interest in analytics. A historic sport with three formats and origins in England boasts a fan base of millions all over the world. Researchers and fans want to know what the numbers reveal about the game and perhaps how to predict winners and losers. 
+
+# Literature Review
+
+LIT REVIEW GOES HERE
+LIT REVIEW GOES HERE
+LIT REVIEW GOES HERE
+LIT REVIEW GOES HERE
+LIT REVIEW GOES HERE
+LIT REVIEW GOES HERE
+
+# Research Questions
+
+We have several research questions that we wanted to answer in this study: 
+
+Does home field percentage influence win-loss percentage for Australia’s cricket team? 
+
+Hypotheses: 
+
+Null hypothesis: Location does not have a statistically significant impact on win-loss percentage for Australia’s cricket team. 
+
+Alternative hypothesis: Location does have a statistically significant impact on win-loss percentage for Australia’s cricket team. 
+
+Does game format influence win-loss percentage for Australia’s cricket team? 
+
+Hypotheses: 
+
+Null hypothesis: Game format does not have a statistically significant impact on win-loss percentage for Australia’s cricket team. 
+
+Alternative hypothesis: Game format does have a statistically significant impact on win-loss percentage for Australia’s cricket team. 
+
+
+# Methods 
+
+The data was scraped from our sources, only including Australia as the team. After intaking the data and verifying any errors, we calculated the numeric values we wished to test: win percentage and the percentage of games played at home. The home game percentage was calculated by grouping the data by year, then simply taking the number of home games that year divided by the number of total games that year. The win percentage was calculated by again grouping by year, but this time taking only wins, counting a tie as non-win, and dividing by the total number of games.  
+
+After we found these values, the standard assumptions of homoscedasticity, residuals follow a gaussian distribution, and independence of observations. Assuming these assumptions can be met we will then continue with the analysis and fit a one-way ANOVA model. If the ANOVA model produces any significant results, according to a Type-I error rate of 0.1, we will continue with Post-Hoc analysis. 
+
+# Data Analysis
+
+```{r buildStats}
 # Descriptive statistics on win % by Type ----
 winStats <- psych::describeBy(
   x = cricketData$winPercent,
@@ -85,7 +135,10 @@ winStats <- psych::describeBy(
   mat = TRUE,
   digits = 4
 )
-
+```
+```{r sampleStats}
+#| tab.cap = "Descriptive Statistics",
+#| tab.pos = "H"
 winStats %>%
   tibble::remove_rownames() %>%
   tibble::column_to_rownames(
@@ -95,13 +148,12 @@ winStats %>%
     n, min, Q0.25, median, Q0.75, max, mad, mean, sd, skew, kurtosis
   ) %>%
   knitr::kable(
-    caption = "Summary Statistics for Win % by Type of Match",
+    caption = "Summary Statistics for Win Rate by Type of Match",
     digits = 3,
     format.args = list(big.mark = ","),
     align = rep('c', 11),
     col.names = c("n", "Min", "Q1", "Median", "Q3", "Max", "MAD", "SAM", "SASD",
-                  "Sample Skew", "Sample Ex. Kurtosis"),
-    booktabs = TRUE
+                  "Sample Skew", "Sample Ex. Kurtosis")
   )  %>%
   kableExtra::kable_styling(
     font_size = 12,
@@ -109,25 +161,25 @@ winStats %>%
   )
 
 ```
-```{r homewinScatter}
-#| fig.cap = "Plot of Home Game Percent vs Adjusted Win Percentage"
-cricketData %>%
-  ggplot(aes(x = homeRatio, y = winTransformed, color = Type)) + geom_point() + xlab("Win Percentage Sqaured") +ylab("Percent of Games Played at Home") + ggtitle('Home Games vs Wins')
-```
-```{r}
-#| fig.cap = "Shadowgram of Adjusted Win Percentage",
+Looking at Table \ref{tab:sampleStats} we are looking at the Win Percent summary statistics grouped by each type of cricket match, most notably we see that the T20I match type has the largest range of win percentage going from 0% all the way to 100%. This will be important to keep in mind later on when it is time to check the assumptions.
+```{r shadow}
+#| fig.cap = "Shadowgram of Win Rate",
 #| fig.pos = "H",
 #| fig.height = 2.75
 
 # Create a shadowgram of the distances ----
 shadowgram(
-  dataVec = cricketData$winTransformed * 100,
-  label = "Distance (cm)",
-  layers = 70,
-  aStep = 7,
+  dataVec = cricketData$winPercent *100,
+  label = "Win Rate x 100",
+  layers = 50,
+  aStep = 4,
   color = "blue"
 )
 ```
+Figure \ref{fig:shadow} provides the shadowgram for our 33 win rates. In examining the shadowgram, we can that there is one dominant modal clump (essentially the entire graph) with some faint separation in the background. While we know that we have three groups based upon year in school, Figure \ref{fig:shadow} suggests that there may not be significant differences in terms of win rate between the type of match.
+
+# Assumptions
+
 ```{r aovFit}
 # Define AOV for cricketModel ---
 cricketModel <- aov(
@@ -136,15 +188,53 @@ data = cricketData,
 na.action = "na.omit"
 )
 # Model for homogeneity ---
-cricketModel <- aov(
+cricketModel2 <- aov(
 formula = winTransformed ~ Year + Type*homeRatio,
 data = cricketData,
 na.action = "na.omit"
 )
 
 ```
+## Gaussian Residuals
+```{r gausRes1}
+#| fig.pos = "H",
+#| fig.cap = "Gaussian Residuals"
+cricketModel3 <- aov(
+formula = winPercent ~ Year + Type + homeRatio,
+data = cricketData,
+na.action = "na.omit"
+)
+
+# QQ plot ----
+car::qqPlot(
+x = residuals(cricketModel3),
+distribution = "norm",
+envelope = 0.90,
+id = FALSE,
+pch = 20,
+ylab = "Residuals (Win % Adj.)"
+)
+```
+The first assumption that was tested was if the residuals followed a Gaussian distribution, and looking at Figure \ref{fig:gausRes1} we see about 10 points outside the 90% confidence envelope, therefore invalidating this assumption. Due to this error, we must transform the residuals, the method we will use will be to sqaure the win percentage in order to help makeup for the imbalance we currently see.
+```{r gausRes2}
+#| fig.pos = "H",
+#| fig.cap = "Transformed Gaussian Residuals"
+# QQ plot ----
+car::qqPlot(
+x = residuals(cricketModel),
+distribution = "norm",
+envelope = 0.90,
+id = FALSE,
+pch = 20,
+ylab = "Residuals (Win % Adj.)"
+)
+```
+
+After performing the transformation, we see in \ref{fig:gausRes2} only 3 points lie fully outside the envelope with one on the edge, this vastly improves the assumption, though due to the limited nature of the data we would ideally want to have less than 3.3 observations to fulfill the 90% envelope, with this is mind we will decide that the assumption is satisfied and continue on.
+
+## Linear Relationship
 ```{r linCov}
-#| fig.cap = "Linearity Covariate Test",
+#| fig.cap = "Linear Relationshop",
 #| fig.pos = "H",
 #| fig.height = 2.75
 
@@ -169,9 +259,9 @@ theme_bw() +
 xlab("Percent of Home Games") +
 ylab("Win Percent (Adjusted)")
 ```
+While not much is easily seen in Figure \ref{fig:linCov}, there is subtle positive linear relationship between the percent of home games and the adjusted win percent, thus satisfying the linear relationship bewteen the response and covariate assumption.
 
-```{r assumCheck1}
-#| fig.sub = "QQ Plot"
+```{r mahalFunc}
 ## Step 1: send the data through the Mahalanobis function
 outlierDetection <- rstatix::mahalanobis_distance(cricketData)
 ## Step 2: OPTIONAL--reattach the factor
@@ -179,6 +269,11 @@ outlierDetection <- cbind(
 outlierDetection,
 factor = cricketData$Type
 )
+```
+```{r potOut}
+#| fig.cap = "Outliers",
+#| fig.pos = "H"
+
 ## Step 3: Make a scatter plot
 ggplot(
 data = outlierDetection,
@@ -191,6 +286,7 @@ color = factor
 ) +
 geom_point(size = 3) +
 theme_bw() +
+ggtitle("Plot of Potential Outliers")+
 xlab("Percent of Home Games") +
 ylab("Win Percent (Adjusted)") +
 labs(
@@ -198,8 +294,12 @@ color = "Type of Match",
 shape = "Potential Outlier"
 )
 ```
-```{r assumCheck2}
-#| fig.cap = "Homogeneity of Slopes"
+## Potential Outliers
+
+While checking for outliers we see that we have only one point in Figure \ref{fig:potOut} that is a potential outlier. In order to determine if it is a true outlier or not we will have to think about why it was marked as one, if it was a data entry error, or a result of the transformation. First, to rule out the data entry, we re-ran the code, and re-gathered all the data used. Now, thinking about the transformation, this data point just so happened to be the only team that went undefeated in the entire sample we chose. Due to our choice to transform the data by squaring it, we in turn made every other value smaller, except for this one. Due to this scenario we will decide to keep it in, as we also have teams that failed to win even a single match.
+```{r homoSlope}
+#| fig.cap = "Homogeneity of Slopes",
+#| fig.pos = "H"
 # Demo Code for Assessing Homogeneity of Slopes in Keyboarding Pain Study ----
 ggplot(
 data = cricketData,
@@ -213,7 +313,7 @@ shape = Type
 geom_point(size = 2) +
 geom_smooth(
 method = "lm", # See notes below
-mapping = aes(y = predict(cricketModel)),
+mapping = aes(y = predict(cricketModel2)),
 formula = y ~ x,
 se = FALSE
 ) +
@@ -225,18 +325,13 @@ color = "Type of Match",
 shape = "Type of Match"
 )
 ```
-```{r gausRes}
-# Demo Code for QQ plot in Keyboarding Pain Study ----
-car::qqPlot(
-x = residuals(cricketModel),
-distribution = "norm",
-envelope = 0.90,
-id = FALSE,
-pch = 20,
-ylab = "Residuals (Win % Adj.)"
-)
-```
-```{r tukey}
+## Homegeneity of Slopes
+
+Continuing onto the homogeneity of slopes assumption, we see that there is a subtle violation of the slopes, this is due to two different things: The outlier as mentioned from Figure \ref{fig:outliers} and an unaccounted aspect of the type of match, the length of the match. The ODI and Test matches last roughly the same amount of time, whereas T20I take almost half as long from start to finish, this means that a team may have less time to adjust to a crowd, and therefore giving the away team a potential disadvantage.
+
+```{r tukeyPlot}
+#| fig.cap = "Tukey Plot",
+#| fig.pos = "H"
 # Generate the Tukey-Anscombe plot ----
 ggplot(
   data = data.frame(
@@ -263,7 +358,7 @@ ggplot(
   ylab("Residuals (Adj. Win %)")
 ```
 
-```{r assumCheck3}
+```{r indObs}
 #| fig.cap = "Independence of Observation Scatter Plot",
 #| fig.pos = "H",
 #| fig.show = "hold"
@@ -289,8 +384,9 @@ ylab("Residuals")
 
 
 ```
-```{r omnibus}
-#| fig.cap = "Omnibus Output for Cricket Model"
+```{r omniTable}
+#| tab.cap = "Omnibus Output for Cricket Model",
+#| tab.pos = "H"
 # Omnibus Test/Modern ANCOVA Table ----
 parameters::model_parameters(
 model = cricketModel,
@@ -325,7 +421,10 @@ font_size = 12,
 latex_options = c("scale_down", "HOLD_position")
 )
 ```
+
 ```{r pointEst}
+#| tab.cap = "Adjusted Point Estimates",
+#| tab.pos = "H"
 ## Type
 emmOutKey <- emmeans::emmeans(
 object = cricketModel,
@@ -350,6 +449,8 @@ latex_options = c("HOLD_position")
 )
 ```
 ```{r contrast}
+#| tab.pos = "H",
+#| tab.cap = "Contrasts"
 as.data.frame(emmOutKey$contrasts) %>%
 knitr::kable(
 digits = 4,
@@ -366,7 +467,8 @@ latex_options = c("HOLD_position")
 )
 ```
 ```{r postHoc}
-## Keyboarding Study
+#| tab.pos = "H",
+#| tab.cap = "Post-Hoc Analysis"
 as.data.frame(
 emmeans::eff_size(
 object = emmOutKey,
@@ -393,7 +495,38 @@ latex_options = "HOLD_position"
 )
 
 ```
+```{r ancova2}
+#| fig.pos = "H",
+#| fig.cap = "Ancova Choice Model"
+ggplot(
+data = cricketData,
+mapping = aes(
+y = winTransformed,
+x = homeRatio,
+color = Type,
+shape = Type
+)
+) +
+geom_point(size = 2) +
+geom_smooth(
+inherit.aes = FALSE, # Tells smoother to ignore the factor
+mapping = aes(x = homeRatio, y = winTransformed),
+method = "lm",
+formula = y ~ x,
+se = FALSE
+) +
+theme_bw() +
+xlab("Percent of Home Games") +
+ylab("Win Percent (Adjusted)") +
+labs(
+color = "Type of Match",
+shape = "Type of Match"
+) +
+theme(
+legend.position = "right"
+)
 
+```
 
 
 ```{r codeAppendix, ref.label = knitr::all_labels(), echo = TRUE, eval = FALSE}
